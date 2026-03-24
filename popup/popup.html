@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LeetCrack</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>LeetCrack</h1>
+      <button id="settings-btn" title="Settings">&#9881;</button>
+    </header>
+
+    <section class="input-section">
+      <label for="pseudocode-input">Pseudocode</label>
+      <textarea
+        id="pseudocode-input"
+        placeholder="e.g., function that takes sorted array and target, uses binary search to find target index, returns -1 if not found"
+        rows="8"
+      ></textarea>
+      <button id="convert-btn" class="primary-btn">Convert to JavaScript</button>
+    </section>
+
+    <section class="code-section" id="code-section" hidden>
+      <div class="section-header">
+        <label for="code-output">Generated JavaScript</label>
+        <button id="copy-btn" class="small-btn">Copy</button>
+      </div>
+      <textarea id="code-output" rows="12" spellcheck="false"></textarea>
+      <div class="action-row">
+        <button id="run-btn" class="primary-btn">Run Code</button>
+        <span id="security-status"></span>
+      </div>
+    </section>
+
+    <section class="result-section" id="result-section" hidden>
+      <label>Output</label>
+      <pre id="execution-output"></pre>
+    </section>
+
+    <div id="loading-overlay" hidden>
+      <div class="spinner"></div>
+      <span id="loading-text">Converting...</span>
+    </div>
+
+    <div id="error-bar" hidden></div>
+  </div>
+
+  <iframe
+    id="sandbox-frame"
+    src="../sandbox/sandbox.html"
+    style="display:none"
+  ></iframe>
+
+  <script src="../lib/security.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
