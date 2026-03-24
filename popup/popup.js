@@ -66,7 +66,87 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // TODO: Phase 4 - Run button logic, security scan, sandbox communication
+  // --- Run button ---
+  let executionResolver = null;
+  const EXECUTION_TIMEOUT_MS = 5000;
+
+  // Listen for results from the sandbox iframe
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.action === 'result' && executionResolver) {
+      executionResolver(event.data);
+      executionResolver = null;
+    }
+  });
+
+  runBtn.addEventListener('click', async () => {
+    const code = codeOutput.value.trim();
+    if (!code) return;
+
+    hideError();
+
+    // Layer 2: Static security scan
+    const scan = window.LeetCrackSecurity.scanCode(code);
+    if (!scan.safe) {
+      securityStatus.textContent = 'Blocked';
+      securityStatus.className = 'unsafe';
+      const details = scan.violations.map(v => `Line ${v.line}: ${v.reason}`).join('\n');
+      showError('Security scan failed:\n' + details);
+      return;
+    }
+
+    securityStatus.textContent = 'Passed';
+    securityStatus.className = 'safe';
+    showLoading('Running code...');
+    runBtn.disabled = true;
+
+    try {
+      const result = await executeInSandbox(code);
+
+      resultSection.hidden = false;
+
+      if (result.success) {
+        let output = '';
+        if (result.logs && result.logs.length > 0) {
+          output += result.logs.join('\n');
+        }
+        if (result.returnValue) {
+          output += (output ? '\n\n' : '') + '=> ' + result.returnValue;
+        }
+        executionOutput.textContent = output || '(no output)';
+      } else {
+        executionOutput.textContent = 'Error: ' + result.error +
+          (result.logs && result.logs.length > 0 ? '\n\nPartial output:\n' + result.logs.join('\n') : '');
+      }
+    } catch (err) {
+      resultSection.hidden = false;
+      executionOutput.textContent = 'Error: ' + err.message;
+    } finally {
+      hideLoading();
+      runBtn.disabled = false;
+    }
+  });
+
+  function executeInSandbox(code) {
+    return new Promise((resolve, reject) => {
+      executionResolver = resolve;
+
+      sandboxFrame.contentWindow.postMessage(
+        { action: 'execute', code: code }, '*'
+      );
+
+      // Layer 4: Timeout — destroy and recreate iframe if code hangs
+      setTimeout(() => {
+        if (executionResolver) {
+          executionResolver = null;
+          // Destroy the hung iframe and recreate it
+          const src = sandboxFrame.src;
+          sandboxFrame.src = '';
+          sandboxFrame.src = src;
+          reject(new Error('Execution timed out (5s limit). Possible infinite loop.'));
+        }
+      }, EXECUTION_TIMEOUT_MS);
+    });
+  }
 
   // --- Helper functions ---
   function showLoading(text) {
