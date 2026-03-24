@@ -212,8 +212,63 @@ textarea::placeholder {
   background: #5c1a1a;
   border: 1px solid #e94560;
   border-radius: 6px;
-  padding: 10px;
+  padding: 10px 32px 10px 10px;
   font-size: 13px;
   color: #ff8a8a;
   line-height: 1.4;
+  white-space: pre-wrap;
+  position: relative;
+}
+
+#error-bar .close-btn {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #ff8a8a;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+#error-bar .close-btn:hover {
+  color: #fff;
+}
+
+/* API key notice */
+#no-key-notice {
+  background: #2a2a1a;
+  border: 1px solid #e9a545;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 13px;
+  color: #e9c96a;
+  text-align: center;
+}
+
+#no-key-notice a {
+  color: #e94560;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #16213e;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0f3460;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e94560;
 }

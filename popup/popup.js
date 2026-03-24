@@ -17,9 +17,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorBar = document.getElementById('error-bar');
   const sandboxFrame = document.getElementById('sandbox-frame');
 
-  // --- Settings button ---
-  settingsBtn.addEventListener('click', () => {
+  const noKeyNotice = document.getElementById('no-key-notice');
+  const openSettingsLink = document.getElementById('open-settings-link');
+
+  function openSettings() {
     chrome.tabs.create({ url: chrome.runtime.getURL('settings/settings.html') });
+  }
+
+  // --- Settings button ---
+  settingsBtn.addEventListener('click', openSettings);
+  openSettingsLink.addEventListener('click', openSettings);
+
+  // --- Check for API key on load ---
+  chrome.storage.local.get(['openai_api_key'], (result) => {
+    if (!result.openai_api_key) {
+      noKeyNotice.hidden = false;
+    }
   });
 
   // --- Convert button ---
@@ -45,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         codeOutput.value = response.code;
         codeSection.hidden = false;
         resultSection.hidden = true;
+        noKeyNotice.hidden = true;
         securityStatus.textContent = '';
         securityStatus.className = '';
       } else {
@@ -159,11 +173,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showError(message) {
-    errorBar.textContent = message;
+    errorBar.innerHTML = '';
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'close-btn';
+    closeBtn.textContent = '\u00d7';
+    closeBtn.addEventListener('click', hideError);
+    errorBar.appendChild(closeBtn);
+    errorBar.appendChild(document.createTextNode(message));
     errorBar.hidden = false;
   }
 
   function hideError() {
     errorBar.hidden = true;
   }
+
+  // --- Keyboard shortcut: Ctrl/Cmd+Enter to convert ---
+  pseudocodeInput.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      convertBtn.click();
+    }
+  });
+
+  // --- Keyboard shortcut: Ctrl/Cmd+Enter in code area to run ---
+  codeOutput.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      runBtn.click();
+    }
+  });
 });
