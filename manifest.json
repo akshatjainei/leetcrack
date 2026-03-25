@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "LeetCrack",
   "version": "1.0.0",
-  "description": "Convert pseudocode to executable JavaScript using AI",
+  "description": "Run pseudocode instantly using AI",
   "permissions": [
     "storage"
   ],

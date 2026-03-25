@@ -3,13 +3,8 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const settingsBtn = document.getElementById('settings-btn');
-  const convertBtn = document.getElementById('convert-btn');
-  const pseudocodeInput = document.getElementById('pseudocode-input');
-  const codeSection = document.getElementById('code-section');
-  const codeOutput = document.getElementById('code-output');
-  const copyBtn = document.getElementById('copy-btn');
   const runBtn = document.getElementById('run-btn');
-  const securityStatus = document.getElementById('security-status');
+  const pseudocodeInput = document.getElementById('pseudocode-input');
   const resultSection = document.getElementById('result-section');
   const executionOutput = document.getElementById('execution-output');
   const loadingOverlay = document.getElementById('loading-overlay');
@@ -35,52 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // --- Convert button ---
-  convertBtn.addEventListener('click', async () => {
-    const pseudocode = pseudocodeInput.value.trim();
-
-    if (pseudocode.length < 10) {
-      showError('Please enter more detailed pseudocode (at least 10 characters).');
-      return;
-    }
-
-    hideError();
-    showLoading('Converting pseudocode...');
-    convertBtn.disabled = true;
-
-    try {
-      const response = await chrome.runtime.sendMessage({
-        action: 'convert',
-        pseudocode: pseudocode
-      });
-
-      if (response.success) {
-        codeOutput.value = response.code;
-        codeSection.hidden = false;
-        resultSection.hidden = true;
-        noKeyNotice.hidden = true;
-        securityStatus.textContent = '';
-        securityStatus.className = '';
-      } else {
-        showError(response.error);
-      }
-    } catch (err) {
-      showError('Failed to communicate with background service. Try reloading the extension.');
-    } finally {
-      hideLoading();
-      convertBtn.disabled = false;
-    }
-  });
-
-  // --- Copy button ---
-  copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(codeOutput.value).then(() => {
-      copyBtn.textContent = 'Copied!';
-      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
-    });
-  });
-
-  // --- Run button ---
+  // --- Run button: convert pseudocode then execute automatically ---
   let executionResolver = null;
   const EXECUTION_TIMEOUT_MS = 5000;
 
@@ -93,27 +43,43 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   runBtn.addEventListener('click', async () => {
-    const code = codeOutput.value.trim();
-    if (!code) return;
+    const pseudocode = pseudocodeInput.value.trim();
 
-    hideError();
-
-    // Layer 2: Static security scan
-    const scan = window.LeetCrackSecurity.scanCode(code);
-    if (!scan.safe) {
-      securityStatus.textContent = 'Blocked';
-      securityStatus.className = 'unsafe';
-      const details = scan.violations.map(v => `Line ${v.line}: ${v.reason}`).join('\n');
-      showError('Security scan failed:\n' + details);
+    if (pseudocode.length < 10) {
+      showError('Please enter more detailed pseudocode (at least 10 characters).');
       return;
     }
 
-    securityStatus.textContent = 'Passed';
-    securityStatus.className = 'safe';
-    showLoading('Running code...');
+    hideError();
+    resultSection.hidden = true;
+    showLoading('Generating output...');
     runBtn.disabled = true;
 
     try {
+      // Step 1: Convert pseudocode to code via AI
+      const response = await chrome.runtime.sendMessage({
+        action: 'convert',
+        pseudocode: pseudocode
+      });
+
+      if (!response.success) {
+        showError(response.error);
+        return;
+      }
+
+      const code = response.code;
+      noKeyNotice.hidden = true;
+
+      // Step 2: Security scan
+      const scan = window.LeetCrackSecurity.scanCode(code);
+      if (!scan.safe) {
+        const details = scan.violations.map(v => `Line ${v.line}: ${v.reason}`).join('\n');
+        showError('Security scan failed:\n' + details);
+        return;
+      }
+
+      // Step 3: Execute in sandbox
+      showLoading('Running...');
       const result = await executeInSandbox(code);
 
       resultSection.hidden = false;
@@ -148,11 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
         { action: 'execute', code: code }, '*'
       );
 
-      // Layer 4: Timeout — destroy and recreate iframe if code hangs
+      // Timeout — destroy and recreate iframe if code hangs
       setTimeout(() => {
         if (executionResolver) {
           executionResolver = null;
-          // Destroy the hung iframe and recreate it
           const src = sandboxFrame.src;
           sandboxFrame.src = '';
           sandboxFrame.src = src;
@@ -187,16 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
     errorBar.hidden = true;
   }
 
-  // --- Keyboard shortcut: Ctrl/Cmd+Enter to convert ---
+  // --- Keyboard shortcut: Ctrl/Cmd+Enter to run ---
   pseudocodeInput.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      convertBtn.click();
-    }
-  });
-
-  // --- Keyboard shortcut: Ctrl/Cmd+Enter in code area to run ---
-  codeOutput.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       runBtn.click();
