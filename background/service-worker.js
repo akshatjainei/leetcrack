@@ -71,6 +71,10 @@ async function handleConvert(pseudocode) {
   const data = await response.json();
   const rawContent = data.choices?.[0]?.message?.content || '';
 
+  if (rawContent.trim() === 'INVALID_INPUT') {
+    return { success: false, error: 'Invalid input. Please provide pseudocode or an algorithm description.' };
+  }
+
   // Extract code from markdown code fence
   const code = extractCode(rawContent);
 
