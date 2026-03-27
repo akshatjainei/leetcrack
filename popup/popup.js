@@ -30,6 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // --- Auto-fill from context menu selection ---
+  chrome.storage.local.get(['contextMenuText'], (result) => {
+    if (result.contextMenuText) {
+      pseudocodeInput.value = result.contextMenuText;
+      chrome.storage.local.remove('contextMenuText');
+      // Auto-run after a short delay to let the sandbox iframe load
+      setTimeout(() => runBtn.click(), 300);
+    }
+  });
+
   // --- Run button: convert pseudocode then execute automatically ---
   let executionResolver = null;
   const EXECUTION_TIMEOUT_MS = 5000;

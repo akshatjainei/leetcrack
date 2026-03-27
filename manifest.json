@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "description": "Run pseudocode instantly using AI",
   "permissions": [
-    "storage"
+    "storage",
+    "contextMenus"
   ],
   "host_permissions": [
     "https://api.openai.com/*"

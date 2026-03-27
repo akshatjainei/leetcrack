@@ -5,6 +5,22 @@ importScripts('../lib/prompt.js');
 
 console.log('LeetCrack service worker loaded');
 
+// --- Context menu: right-click selected text to generate output ---
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: 'leetcrack-generate',
+    title: 'Generate output with LeetCrack',
+    contexts: ['selection']
+  });
+});
+
+chrome.contextMenus.onClicked.addListener(async (info) => {
+  if (info.menuItemId === 'leetcrack-generate' && info.selectionText) {
+    await chrome.storage.local.set({ contextMenuText: info.selectionText });
+    chrome.tabs.create({ url: chrome.runtime.getURL('popup/popup.html') });
+  }
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'convert') {
     handleConvert(message.pseudocode)
